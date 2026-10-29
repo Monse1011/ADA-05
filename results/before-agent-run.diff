@@ -1,0 +1,58 @@
+diff --git a/customer_search/repositories/customer_repository.py b/customer_search/repositories/customer_repository.py
+index f83754f..3f0ce7f 100644
+--- a/customer_search/repositories/customer_repository.py
++++ b/customer_search/repositories/customer_repository.py
+@@ -21,5 +21,5 @@ class InMemoryCustomerRepository(ICustomerRepository):
+         self._customers: List[Customer] = customers or []
+ 
+     def search_customers(self, query: str) -> List[Customer]:
+-        """Baseline stub to be expanded in T-03."""
+-        return list(self._customers)
++        """Return customers whose name or email contains the query (substring match)."""
++        return [c for c in self._customers if query in c.name or query in c.email]
+diff --git a/tests/test_substring_search.py b/tests/test_substring_search.py
+new file mode 100644
+index 0000000..facc951
+--- /dev/null
++++ b/tests/test_substring_search.py
+@@ -0,0 +1,40 @@
++"""Tests for T-03 substring matching on name and email (TS-01 to TS-05)."""
++
++import pytest
++from customer_search.models.customer import Customer
++from customer_search.repositories.customer_repository import InMemoryCustomerRepository
++from customer_search.services.search_service import CustomerSearchService
++
++
++@pytest.fixture
++def service():
++    customers = [
++        Customer(customer_id="1", name="John Smith", email="john.smith@example.com"),
++        Customer(customer_id="2", name="Johnny Brown", email="jbrown@example.com"),
++        Customer(customer_id="3", name="Alice Green", email="alice@example.com"),
++    ]
++    return CustomerSearchService(repository=InMemoryCustomerRepository(customers))
++
++
++def _ids(results):
++    return {r.customer_id for r in results}
++
++
++def test_ts01_full_name_search(service):
++    assert _ids(service.search("John Smith")) == {"1"}
++
++
++def test_ts02_partial_name_search(service):
++    assert _ids(service.search("John")) == {"1", "2"}
++
++
++def test_ts03_full_email_search(service):
++    assert _ids(service.search("john.smith@example.com")) == {"1"}
++
++
++def test_ts04_partial_email_search(service):
++    assert _ids(service.search("john.smith")) == {"1"}
++
++
++def test_ts05_no_match_returns_empty_result_set(service):
++    assert service.search("xyz123") == []

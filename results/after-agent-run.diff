@@ -1,0 +1,73 @@
+diff --git a/customer_search/repositories/customer_repository.py b/customer_search/repositories/customer_repository.py
+index f83754f..0ef346f 100644
+--- a/customer_search/repositories/customer_repository.py
++++ b/customer_search/repositories/customer_repository.py
+@@ -21,5 +21,5 @@ class InMemoryCustomerRepository(ICustomerRepository):
+         self._customers: List[Customer] = customers or []
+ 
+     def search_customers(self, query: str) -> List[Customer]:
+-        """Baseline stub to be expanded in T-03."""
+-        return list(self._customers)
++        """Return customers whose name or email contains the query; case handling is open (Q-03)."""
++        return [c for c in self._customers if query in c.name or query in c.email]
+diff --git a/docs/TRACEABILITY.md b/docs/TRACEABILITY.md
+index 291cbf7..c27b163 100644
+--- a/docs/TRACEABILITY.md
++++ b/docs/TRACEABILITY.md
+@@ -6,11 +6,11 @@ This matrix connects the requirements defined in [`REQUIREMENTS.md`](./%20REQUIR
+ 
+ | Requirement | SPEC / AC | Task | Files | Test | Status | Notes |
+ |---|---|---|---|---|---|---|
+-| FR-01 | Search Rules 1, 2, 3, 4; AC-01, AC-02; TS-01, TS-02 | T-03, T-05 | `customer_search/services/search_service.py`<br>`customer_search/repositories/customer_repository.py`<br>`customer_search/api/controller.py`<br>`customer_search/validation/validator.py` | `tests/test_project_setup.py::test_repository_interface_and_implementation`<br>`tests/test_project_setup.py::test_layers_wiring_and_controller_reference` | Partial | `InMemoryCustomerRepository.search_customers()` is a baseline stub returning all customers without name query filtering. Tests verify architectural wiring only, not full/partial name query matching or negative matches. |
+-| FR-02 | Search Rules 1, 2, 3, 5; AC-03; TS-03, TS-04 | T-03, T-05 | `customer_search/services/search_service.py`<br>`customer_search/repositories/customer_repository.py`<br>`customer_search/api/controller.py` | None | Partial | Repository email search logic is stubbed; no automated tests exist in `tests/` for full or partial email searches. |
+-| FR-03 | Search Rules 2, 3; AC-01, AC-02, AC-03; TS-01, TS-02, TS-03, TS-04 | T-03, T-05 | `customer_search/services/search_service.py`<br>`customer_search/repositories/customer_repository.py` | None | Partial | Substring matching across name/email is not implemented in `InMemoryCustomerRepository`; exclusion of non-matching records is untested. |
++| FR-01 | Search Rules 1, 2, 3, 4; AC-01, AC-02; TS-01, TS-02 | T-03, T-05 | `customer_search/services/search_service.py`<br>`customer_search/repositories/customer_repository.py`<br>`customer_search/api/controller.py`<br>`customer_search/validation/validator.py` | `tests/test_project_setup.py::test_repository_interface_and_implementation`<br>`tests/test_project_setup.py::test_layers_wiring_and_controller_reference`<br>`tests/test_search_matching.py::test_search_returns_only_matching_customers` | Partial | `InMemoryCustomerRepository.search_customers()` returns customers whose name contains the query (substring). TS-01 and TS-02 are tested with result sets. Open: relevance order (Q-02), case sensitivity (Q-03, not asserted), empty query (Q-05). |
++| FR-02 | Search Rules 1, 2, 3, 5; AC-03; TS-03, TS-04 | T-03, T-05 | `customer_search/services/search_service.py`<br>`customer_search/repositories/customer_repository.py`<br>`customer_search/api/controller.py` | `tests/test_search_matching.py::test_search_returns_only_matching_customers` | Partial | Substring match on email implemented in the repository. TS-03 and TS-04 are tested. Case sensitivity (Q-03) is open and not asserted. |
++| FR-03 | Search Rules 2, 3; AC-01, AC-02, AC-03; TS-01, TS-02, TS-03, TS-04 | T-03, T-05 | `customer_search/services/search_service.py`<br>`customer_search/repositories/customer_repository.py` | `tests/test_search_matching.py::test_search_returns_only_matching_customers` | Partial | Name-or-email substring match implemented; tests show non-matching customers are excluded (TS-01..TS-05). Case sensitivity (Q-03) is open and not asserted. |
+ | FR-04 | Search Rules 6, 7; AC-04; TS-09 | T-03, T-05 | `customer_search/services/search_service.py` | None | Missing | No relevance ranking or sorting algorithm is implemented in service or repository; criteria remained open under Q-02; no automated tests exist. |
+-| FR-05 | Search Rule 10; Error Handling (No Results); AC-05; TS-05 | T-04, T-05 | `customer_search/services/search_service.py`<br>`customer_search/api/controller.py` | None | Partial | Controller formats `{"results": []}` when service returns empty, but repository does not filter non-matching queries, and no UI exists to display the no-results message. Untested for non-matching queries. |
++| FR-05 | Search Rule 10; Error Handling (No Results); AC-05; TS-05 | T-04, T-05 | `customer_search/services/search_service.py`<br>`customer_search/api/controller.py` | `tests/test_search_matching.py::test_search_returns_only_matching_customers` | Partial | A non-matching query (`xyz123`, TS-05) returns an empty result set (tested). The no-results message text (Q-04) and UI display are not implemented. |
+ | FR-06 | Domain Model (Customer); Search Rules 8, 9; Error Handling (Unauthorized Access); AC-06; TS-08 | T-02, T-03, T-04, T-05 | `customer_search/auth/authorizer.py`<br>`customer_search/services/search_service.py`<br>`customer_search/models/customer.py` | `tests/test_project_setup.py::test_validation_and_auth_components` | Partial | `CustomerSearchAuthorizer.filter_authorized_customers()` is a pass-through stub returning all customers; `is_user_authorized_for_search()` is not called in `search()`; unauthorized data filtering is neither enforced nor verified. |
+ | NFR-01 | Scope; AC-08; TS-10 | T-05 | None | None | Not verified | No performance test harness, benchmark scripts, or large datasets exist in the repository to measure latency or the 95th percentile response target (< 2s). |
+ | NFR-02 | Validation Rule 6; Constraints; AC-06, AC-07 | T-03, T-04, T-05 | `customer_search/auth/authorizer.py`<br>`customer_search/validation/validator.py`<br>`customer_search/services/search_service.py` | `tests/test_project_setup.py::test_validation_and_auth_components` | Partial | Basic stubs exist for validator and authorizer, but SQL/input injection prevention and authorization enforcement are not implemented or verified by tests. |
+diff --git a/tests/test_search_matching.py b/tests/test_search_matching.py
+new file mode 100644
+index 0000000..e8ecd4d
+--- /dev/null
++++ b/tests/test_search_matching.py
+@@ -0,0 +1,35 @@
++"""Tests for T-03 substring matching on name and email (TS-01..TS-05).
++
++Queries use the same letter case as the stored data: case sensitivity is open (Q-03).
++"""
++
++import pytest
++from customer_search.models.customer import Customer
++from customer_search.repositories.customer_repository import InMemoryCustomerRepository
++from customer_search.services.search_service import CustomerSearchService
++
++CUSTOMERS = [
++    Customer(customer_id="1", name="John Smith", email="john.smith@example.com"),
++    Customer(customer_id="2", name="Johnny Brown", email="jbrown@example.com"),
++    Customer(customer_id="3", name="Alice Green", email="alice@example.org"),
++]
++
++
++def search_ids(query):
++    service = CustomerSearchService(repository=InMemoryCustomerRepository(CUSTOMERS))
++    return {r.customer_id for r in service.search(query)}
++
++
++@pytest.mark.parametrize(
++    "scenario, query, expected",
++    [
++        ("TS-01 full name", "John Smith", {"1"}),
++        ("TS-02 partial name", "John", {"1", "2"}),
++        ("TS-03 full email", "john.smith@example.com", {"1"}),
++        ("TS-04 partial email", "john.smith", {"1"}),
++        ("TS-05 no match", "xyz123", set()),
++    ],
++)
++def test_search_returns_only_matching_customers(scenario, query, expected):
++    # Sets, not lists: relevance order is open (Q-02).
++    assert search_ids(query) == expected

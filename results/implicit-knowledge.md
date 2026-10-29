@@ -41,3 +41,4 @@
   - The audit stays in `~/Downloads`.
   - The BEFORE evidence stays untracked in the main checkout (`/Users/monseanaya/Developer/ADA-05/results/`).
   - This keeps it intact and keeps the BEFORE observations from being visible to the AFTER agent. Consolidating them is a decision for the owner.
+  - **Update (Phase 5):** with the owner's approval, the evidence was copied into this branch after the AFTER run: the audit, the `results/*-agent-run.md` files, `baseline-environment.md`, `TASK_UNDER_TEST.md`, and the agent diffs. The originals were left in place. Provenance and hashes are in `results/readiness-improvement-report.md` §2.
