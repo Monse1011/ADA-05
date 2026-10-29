@@ -9,6 +9,9 @@ description = "Customer Search feature implementation following layered architec
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+dev = ["pytest"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
